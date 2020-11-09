@@ -299,7 +299,7 @@ func newPIAv4HTTPClient(serverName string) (client *http.Client, err error) {
 
 func refreshPIAPortForwardData(ctx context.Context, client *http.Client,
 	gateway net.IP, fileManager files.FileManager) (data piaPortForwardData, err error) {
-	data.Token, err = fetchPIAToken(ctx, fileManager, client)
+	data.Token, err = fetchPIAToken(ctx, fileManager, client, gateway)
 	if err != nil {
 		return data, fmt.Errorf("cannot obtain token: %w", err)
 	}
@@ -382,7 +382,8 @@ func packPIAPayload(port uint16, token string, expiration time.Time) (payload st
 	return payload, nil
 }
 
-func fetchPIAToken(ctx context.Context, fileManager files.FileManager, client *http.Client) (token string, err error) {
+func fetchPIAToken(ctx context.Context, fileManager files.FileManager,
+	client *http.Client, gateway net.IP) (token string, err error) {
 	username, password, err := getOpenvpnCredentials(fileManager)
 	if err != nil {
 		return "", fmt.Errorf("cannot get Openvpn credentials: %w", err)
@@ -390,7 +391,7 @@ func fetchPIAToken(ctx context.Context, fileManager files.FileManager, client *h
 	url := url.URL{
 		Scheme: "https",
 		User:   url.UserPassword(username, password),
-		Host:   "10.0.0.1",
+		Host:   gateway.String(),
 		Path:   "/authv3/generateToken",
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
